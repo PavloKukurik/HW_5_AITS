@@ -1,9 +1,13 @@
+import os
 import requests
+from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException
+
+load_dotenv()
+APP_TOKEN = os.getenv("APP_TOKEN")
 
 app = FastAPI()
 
-APP_TOKEN = "YourSuperSecretToken"
 
 @app.get("/some-protected-route")
 def protected_route(authorization: str = Header(None)):

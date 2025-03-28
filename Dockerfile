@@ -1,4 +1,9 @@
-FROM ubuntu:latest
-LABEL authors="pavlo"
+FROM python:3.10
 
-ENTRYPOINT ["top", "-b"]
+WORKDIR /app
+
+COPY . .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+CMD ["python", "main.py"]
