@@ -1,67 +1,90 @@
-# Homework #2 - Development of a Basic REST Application with Token Authentication
+# Homework #2 - Basic REST Application with Token Authentication
 
-## Overview
+## Purpose
 
-In this homework, the goal is to create a microservice-based application in Python using FastAPI. The objective is to gain hands-on experience in building a simple application, as a set of such applications would later form a larger solution.
+The goal of this assignment is to create a microservice-based application with token authentication that allows clients to interact securely with the Client Service.
 
-## Requirements
+## Microservices Architecture
 
-### 1. Microservice Decomposition
+### 1. Business Logic Service
 
-- **Business Logic Service**
-  - Exposes a core endpoint (e.g., `/process`) to perform the main "long-running" logic, such as ML model inference, data transformations, or any processing that might take a few seconds.
-  - Optional: Call an API of a Large Language Model (LLM) for inference (e.g., https://openrouter.ai/).
-  - Includes a `/health` endpoint for basic status reporting.
-  - The root (`/`) endpoint should return a short description of the service.
+- `/process`: The core endpoint for processing data (e.g., data transformation, ML inference).
+- `/health`: Returns service status (e.g., `{ "status": "ok" }`).
+- Root (`/`): Returns a short description of the service.
 
-- **Database Service**
-  - A service that handles reading and writing data.
-  - Simulate a database using an in-memory Python structure (e.g., lists, dictionaries).
-  - At least two endpoints:
-    - One for saving data (e.g., `/save`).
-    - One for retrieving data (e.g., `/get`).
-  - Includes a `/health` endpoint.
-  - The root (`/`) endpoint should return a short description of the service.
+### 2. Database Service
 
-- **Client Service**
-  - The only service directly accessible by external clients.
-  - Orchestrates calls to both the Database Service and the Business Logic Service:
-    1. Reads data from the Database Service.
-    2. Calls the Business Logic Service to process or transform the data.
-    3. Saves the result back to the Database Service.
-    4. Returns the final response to the user.
-  - Requires token-based authentication for access (via the request header).
-  - Includes a `/health` endpoint.
-  - The root (`/`) endpoint should return a short description of the service.
+- `/save`: Endpoint for saving data (using an in-memory database simulation).
+- `/get/{key}`: Endpoint for retrieving data by key.
+- `/health`: Returns service status.
+- Root (`/`): Returns a short description of the service.
 
-### 2. Security Constraint
+### 3. Client Service
 
-- The **Client Service** is the only publicly accessible endpoint, apart from the `/health` endpoint. Users should not have direct access to the Database or Business Logic services.
-- A minimal token-based authentication mechanism is required. You can define a fixed token in an environment variable or in the code and require it in the "Authorization" header.
+- `/process-and-save/{key}`: Orchestrates the process, including reading data from the Database Service, invoking the Business Logic Service, and saving the result back to the Database Service.
+- `/health`: Returns service status.
+- Root (`/`): Returns a short description of the service.
 
-### 3. Health Check Endpoints
+## Token Authentication
 
-- Each service must provide a `/health` endpoint that returns a simple JSON status (e.g., `{"status": "ok"}`) for easy verification that each service is running.
+The Client Service requires a token for authentication. The token is verified from the request header `Authorization`. Example of a valid request:
 
-### 4. Optional Extensions
+```bash
+    curl -X GET "http://localhost:8000/process-and-save/test" -H "Authorization: Bearer SuperSecretToken"
+```
 
-- You may split the **Business Logic Service** into multiple sub-services (e.g., one for data preprocessing and another for the ML model). This is optional.
-- You can demonstrate asynchronous calls, add Docker support, or create a simple Docker Compose file to run all services together. This is not strictly required but is a great opportunity to learn.
+## Running the Services
 
-## Deliverables
+The application uses Docker Compose to run all services together. Ensure Docker is installed and running on your machine.
 
-### 1. Source Code
+### Steps to Run:
 
-- Organize the microservices into clearly separated files/modules (e.g., `client_service.py`, `business_service.py`, `db_service.py`).
-- Each service must be a small FastAPI application with its respective endpoints.
+1. Clone the repository:
 
-### 2. README/Documentation
+```bash
+git clone https://github.com/PavloKukurik/HW_5_AITS
+cd HW_5_AITS
+```
 
-- Provide clear instructions on how to run each service or start them all together.
-- Explain how the token-based authentication works for the Client Service.
-- Summarize the request flow: Client → (Client Service) → Database Service → Business Logic Service → Database Service → Client.
+2. Build and run the services using Docker Compose:
 
-### 3. Example Usage
+```bash
+./run.sh
+```
 
-- Provide examples of HTTP requests (e.g., using `curl`, Postman, or a Python script) demonstrating how a user can interact with the Client Service endpoint, trigger the orchestration flow, and get the result.
-- It would be helpful to provide a script to start the app with one command.
+Or manually:
+
+```bash
+    docker build -t my_microservices .
+    docker run -p 8000:8000 -p 8001:8001 -p 8002:8002 my_microservices
+```
+
+## Checking Services Health
+
+Verify each service by accessing the following endpoints:
+
+- Client Service: `http://localhost:8000/health`
+- Database Service: `http://localhost:8001/health`
+- Business Logic Service: `http://localhost:8002/health`
+
+Expected response: `{ "status": "ok" }`
+
+## Example Usage
+
+### Saving Data to Database Service:
+
+```bash
+    curl -X POST "http://localhost:8001/save" -H "Content-Type: application/json" -d '{"key": "test", "value": "hello"}'
+```
+
+### Processing and Saving Data:
+
+```bash
+    curl -X GET "http://localhost:8000/process-and-save/test" -H "Authorization: Bearer SuperSecretToken"
+```
+
+### Retrieving Data:
+
+```bash
+    curl -X GET "http://localhost:8001/get/test"
+```
